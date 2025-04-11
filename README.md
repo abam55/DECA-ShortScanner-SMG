@@ -4,6 +4,8 @@ Implementation is extremely simple and free:
 You need Chrome for this, and you cannot use a school Chromebook(Program will not run).
 I intended this purely for Windows(sry Mac Users)
 You need a decent IDE(I used PyCharm)
+
+Also, I recommend running this program at around thirty minutes before the market closes to get the most reliable information
  <br>  </br>
 
 Let's start by creating a project folder in PyCharm and adding a Python file inside.
