@@ -9,12 +9,6 @@ from groq import Groq
 import yfinance as yf
 
 # === CONFIGURATION === #
-NUM_HEADLINES = 3
-SUMMARY_SENTENCES = 3
-MIN_MARKET_CAP = 25 * 1_000_000
-MAX_MARKET_CAP = 250 * 1_000_000
-MIN_PERCENT_CHANGE = 20
-MIN_PREV_PRICE = 3
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -53,13 +47,13 @@ def resolve_final_url(url):
         return url
 
 
-def summarize_text(raw, ticker, client, num_sentences):
+def summarize_text(raw, ticker, client, model, num_sentences):
     prompt = (
         f"Summarize the following article about {ticker} stock in {num_sentences} sentences without starting with, here is a x sentence summary of the article:\n\n{raw}"
     )
     try:
         resp = client.chat.completions.create(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
+            model=model,
             messages=[
                 {"role": "system", "content": "You are a financial news summarizer."},
                 {"role": "user",   "content": prompt}
@@ -67,19 +61,15 @@ def summarize_text(raw, ticker, client, num_sentences):
             temperature=0.5
         )
         text = resp.choices[0].message.content.strip()
-        parts = text.split(". ")
-        parts = parts[:num_sentences]
+        parts = text.split(". ")[:num_sentences]
         summary = ". ".join(p.rstrip(".") for p in parts).strip()
         return summary + "." if not summary.endswith(".") else summary
     except:
         return "Summary generation failed."
 
 
-def fetch_news(ticker, client, num_headlines, num_sentences):
-    rss = (
-        f"https://news.google.com/rss/search?"
-        f"q={ticker}+stock&hl=en-US&gl=US&ceid=US:en"
-    )
+def fetch_news(ticker, client, model, num_headlines, num_sentences):
+    rss = f"https://news.google.com/rss/search?q={ticker}+stock&hl=en-US&gl=US&ceid=US:en"
     r = requests.get(rss, timeout=5, headers={"User-Agent": USER_AGENT})
     if r.status_code != 200:
         return []
@@ -102,16 +92,12 @@ def fetch_news(ticker, client, num_headlines, num_sentences):
         if not raw and item.description:
             raw = BeautifulSoup(item.description.text, "html.parser").get_text().strip()
 
-        if raw:
-            display = summarize_text(raw, ticker, client, num_sentences)
-        else:
-            display = "No summary available."
-
-        news.append((title, link, display, raw))
+        summary = summarize_text(raw, ticker, client, model, num_sentences) if raw else "No summary available."
+        news.append((title, link, summary, raw))
     return news
 
 
-def get_short_rating(ticker, text_for_ai, client):
+def get_short_rating(ticker, text_for_ai, client, model):
     prompt = (
         f"Given this information about {ticker}, how good is this stock "
         f"as a shorting opportunity on a scale of 1 to 5 stars?\n\n"
@@ -119,10 +105,10 @@ def get_short_rating(ticker, text_for_ai, client):
     )
     try:
         resp = client.chat.completions.create(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
+            model=model,
             messages=[
-                {"role": "system","content":"You are a financial analyst rating stocks for shorting."},
-                {"role": "user",  "content": prompt}
+                {"role": "system", "content": "You are a financial analyst rating stocks for shorting."},
+                {"role": "user",   "content": prompt}
             ],
             temperature=0.3
         )
@@ -133,20 +119,20 @@ def get_short_rating(ticker, text_for_ai, client):
         return "⭐❓"
 
 
-def get_risk_tolerance_via_ai(ticker, name, summary_text, client):
+def get_risk_tolerance_via_ai(ticker, name, summary_text, client, model):
     if not summary_text.strip():
         return "Unknown"
 
     prompt = (
         f"Given this summary of recent news about {ticker} ({name}):\n\n"
         f"{summary_text}\n\n"
-        f"Rate the risk tolerance for this stock as one of the following: High, Medium, or Low"
+        f"Rate the risk tolerance for this stock as one of the following: High, Medium, or Low.\n"
         f"Respond with exactly one of these words."
     )
 
     try:
         response = client.chat.completions.create(
-            model="meta-llama/llama-4-scout-17b-16e-instruct",
+            model=model,
             messages=[
                 {"role": "system", "content": "You are a financial analyst assessing risk tolerance of stocks."},
                 {"role": "user", "content": prompt}
@@ -154,16 +140,9 @@ def get_risk_tolerance_via_ai(ticker, name, summary_text, client):
             temperature=0
         )
         risk = response.choices[0].message.content.strip().capitalize()
-      
-        valid_levels = ["High", "Medium", "Low"]
-        for level in valid_levels:
-            if risk.lower() == level.lower():
-                return level
+        return risk if risk in ["High", "Medium", "Low"] else "Unknown"
+    except:
         return "Unknown"
-
-    except Exception:
-        return "Unknown"
-
 
 
 def format_market_cap(mcap):
@@ -184,22 +163,18 @@ def clean_market_cap(raw):
 
 def render_stock_card(ticker, name, price, change_pct, mcap, headlines, short_rating, risk_tolerance):
     news_html = "".join(
-        f'<li class="headline-item">'
-        f'<a href="{link}" target="_blank">{title}</a>'
-        f'<div class="summary-text">{summary}</div>'
-        f'</li>'
+        f'<li class="headline-item"><a href="{link}" target="_blank">{title}</a><div class="summary-text">{summary}</div></li>'
         for title, link, summary in headlines
     )
     risk_data = risk_tolerance.lower() if risk_tolerance else "unknown"
-
     return f"""
-<div class="card mb-4 shadow-sm result-card" data-risk="{risk_data}">
-  <div class="card-body">
-    <h5 class="card-title text-primary">🔹 {ticker} - {name}</h5>
+<div class=\"card mb-4 shadow-sm result-card\" data-risk=\"{risk_data}\">
+  <div class=\"card-body\">
+    <h5 class=\"card-title text-primary\">🔹 {ticker} - {name}</h5>
     <p><strong>💰</strong> ${price:.2f} | {change_pct:.2f}% | Market Cap: {format_market_cap(mcap)}</p>
     <hr/>
-    <h6 class="text-secondary">📰 News:</h6>
-    <ul class="headline-list">{news_html}</ul>
+    <h6 class=\"text-secondary\">📰 News:</h6>
+    <ul class=\"headline-list\">{news_html}</ul>
     <hr/>
     <p><strong>🔻 Short Rating:</strong> {short_rating}</p>
     <p><strong>📊 Risk Tolerance:</strong> {risk_tolerance}</p>
@@ -208,8 +183,7 @@ def render_stock_card(ticker, name, price, change_pct, mcap, headlines, short_ra
 """
 
 
-
-def screen_best_shorts_web(api_key, settings):
+def screen_best_shorts_web(api_key, model, settings):
     client = init_client(api_key)
     opts = Options()
     opts.add_argument("--headless=new")
@@ -240,10 +214,10 @@ def screen_best_shorts_web(api_key, settings):
         if (pct > settings["min_percent"]
             and settings["min_cap"] <= mcap <= settings["max_cap"]
             and prev_p > settings["min_price"]):
-            news4 = fetch_news(ticker, client, settings["num_headlines"], settings["summary_sentences"])
+            news4 = fetch_news(ticker, client, model, settings["num_headlines"], settings["summary_sentences"])
             raw_block = "\n".join(r for _,_,__,r in news4)
-            short_rt = get_short_rating(ticker, raw_block, client)
-            risk = get_risk_tolerance_via_ai(ticker, name, raw_block, client)
+            short_rt = get_short_rating(ticker, raw_block, client, model)
+            risk = get_risk_tolerance_via_ai(ticker, name, raw_block, client, model)
             ui_head = [(t,l,ds) for t,l,ds,_ in news4]
 
             cards.append(render_stock_card(
@@ -254,10 +228,10 @@ def screen_best_shorts_web(api_key, settings):
     return "\n".join(cards) or "<p class='text-muted'>🚫 No stocks met the screening criteria today.</p>"
 
 
-def screen_single_stock_web(api_key, ticker, settings):
+def screen_single_stock_web(api_key, model, ticker, settings):
     ticker = ticker.upper()
     client = init_client(api_key)
-    
+
     try:
         stock = yf.Ticker(ticker)
         info = stock.info
@@ -267,17 +241,16 @@ def screen_single_stock_web(api_key, ticker, settings):
         prev_close = info.get("regularMarketPreviousClose", price)
         change_pct = ((price - prev_close) / prev_close * 100) if prev_close else 0.0
         mcap = info.get("marketCap", 0.0)
-
     except:
         name = ticker
         price = 0.0
         change_pct = 0.0
         mcap = 0.0
 
-    news4 = fetch_news(ticker, client, settings["num_headlines"], settings["summary_sentences"])
+    news4 = fetch_news(ticker, client, model, settings["num_headlines"], settings["summary_sentences"])
     raw_block = "\n".join(r for _,_,__,r in news4)
-    short_rt = get_short_rating(ticker, raw_block, client)
-    risk = get_risk_tolerance_via_ai(ticker, name, raw_block, client)
+    short_rt = get_short_rating(ticker, raw_block, client, model)
+    risk = get_risk_tolerance_via_ai(ticker, name, raw_block, client, model)
     ui_head = [(t, l, ds) for t, l, ds, _ in news4]
 
     return render_stock_card(
