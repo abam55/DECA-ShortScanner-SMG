@@ -37,16 +37,37 @@
           </div>
         </div>
 
-        <div class="col-md-6 d-flex flex-column">
+        <div class="col-md-6">
           <label for="stock" class="form-label mb-1">Single Stock Ticker</label>
           <input type="text" class="form-control mb-2" id="stock" name="stock" placeholder="e.g. TSLA" />
-          <button type="submit" name="action" value="screen_single" class="btn btn-secondary w-auto" style="align-self: flex-start;">
-            Screen Single Stock
-          </button>
-        </div>
-      </div>
 
-      <!-- ADVANCED SETTINGS -->
+          <div class="d-flex gap-2">
+            <button type="submit" name="action" value="screen_single" class="btn btn-secondary">
+              Screen Single Stock
+            </button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#singleStockSettings" aria-expanded="false" aria-controls="singleStockSettings">
+              <i class="bi bi-gear"></i> Settings
+            </button>
+          </div>
+
+          <!-- ADVANCED SETTINGS FOR SINGLE STOCK -->
+          <div class="collapse mt-2" id="singleStockSettings">
+            <div class="card card-body">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="num_headlines_single" class="form-label">Headlines Per Stock</label>
+                  <input type="number" class="form-control" name="num_headlines_single" id="num_headlines_single" value="1" min="1" />
+                </div>
+                <div class="col-md-6">
+                  <label for="summary_sentences_single" class="form-label">Sentences per Summary</label>
+                  <input type="number" class="form-control" name="summary_sentences_single" id="summary_sentences_single" value="3" min="1" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      <!-- ADVANCED SETTINGS FOR ALL STOCKS -->
       <div class="collapse mt-3" id="advancedSettings">
         <div class="card card-body">
           <div class="row g-3">
@@ -96,8 +117,8 @@
         <span class="me-2 fw-semibold">Sort by:</span>
         <button class="btn btn-sm btn-outline-dark" onclick="sortResultsStars(true)">⭐ Low → High</button>
         <button class="btn btn-sm btn-outline-dark" onclick="sortResultsStars(false)">⭐ High → Low</button>
-        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsRisk(true)">Risk Low → High</button>
-        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsRisk(false)">Risk High → Low</button>
+        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsRisk(false)">Risk Low → High</button>
+        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsRisk(true)">Risk High → Low</button>
       </div>
     </div>
 
