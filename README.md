@@ -10,13 +10,16 @@
 
 ⭐ Interactive Sorting: Rank results by star count or risk tolerance
 
-⛔ Drawbacks: Initial setup will take time; Currently only supported on Windows; Program will take A LOT of time to proccess the information, so it will take a lot of time to give you an output, especially if you tweak the advanced settings
+⛔ Drawbacks: Initial setup will take time; Currently only supported on Windows; Program will take A LOT of time to process the information, so it will take a lot of time to give you an output, especially if you tweak the advanced settings
 
+If you liked this program:
+
+[![Star this repo](https://img.shields.io/github/stars/abam55/DECA-ShortScanner-SMG?style=social)](https://github.com/abam55/DECA-ShortScanner-SMG/stargazers)
 
 # 📚 Resources needed
 Chrome Web Browser
 
-Python IDE or Code Editor (PyCharm or VScode work)
+Python IDE or Code Editor (PyCharm or VS Code works)
 
 Groq API(Will cover later)
 
@@ -35,18 +38,18 @@ Groq API(Will cover later)
 
 # 🛠️ Installation
 
-In order to grab my code, you will need to Install Git at https://git-scm.com/downloads/win (If you have any IDE or Code editor open, close and reopen once finished with installation)
+In order to grab my code, you will need to install Git at https://git-scm.com/downloads/win (If you have any IDE or Code editor open, close and reopen once finished with installation)
 
 Clone the repository:
 
-In terminal, type:
+In the terminal of your IDE/Code editor, type:
 
 git clone https://github.com/abam55/DECA-ShortScanner-SMG.git
 
 cd DECA-ShortScanner-SMG
 
 # Install dependencies
-In terminal, type: pip install flask yfinance requests beautifulsoup4 selenium newspaper3k groq chromedriver_autoinstaller lxml_html_clean
+In the same terminal, type: pip install flask yfinance requests beautifulsoup4 selenium newspaper3k groq chromedriver_autoinstaller lxml_html_clean
 
 # 🔐 Configuration
 Head over to https://console.groq.com and create an account to generate your API key.
@@ -58,7 +61,7 @@ Enter your key and model name (e.g., llama3-8b-8192) into the form on the homepa
 Adjust advanced settings as needed before launching a scan
 
 # 🚦 How to Use
-In terminal, type: flask --app app.py run
+In the same terminal, type: flask --app app.py run
 
 Navigate to http://127.0.0.1:5000/ in your browser. From there:
 
