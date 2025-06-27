@@ -127,7 +127,7 @@ def get_risk_tolerance_via_ai(ticker, name, summary_text, client, model):
         f"Given this summary of recent news about {ticker} ({name}):\n\n"
         f"{summary_text}\n\n"
         f"Rate the risk tolerance for this stock as one of the following: High, Medium, or Low.\n"
-        f"Respond with exactly one of these words."
+        f"Respond with ONLY one of these words: High, Medium, or Low. Do not explain your answer."
     )
 
     try:
@@ -139,10 +139,22 @@ def get_risk_tolerance_via_ai(ticker, name, summary_text, client, model):
             ],
             temperature=0
         )
-        risk = response.choices[0].message.content.strip().capitalize()
-        return risk if risk in ["High", "Medium", "Low"] else "Unknown"
-    except:
+        raw_output = response.choices[0].message.content.strip().lower()
+        print(f"[DEBUG] Risk model response for {ticker}: {raw_output}")
+
+        if "high" in raw_output:
+            return "High"
+        elif "medium" in raw_output:
+            return "Medium"
+        elif "low" in raw_output:
+            return "Low"
+        else:
+            return "Unknown"
+
+    except Exception as e:
+        print(f"[ERROR] Failed to get risk tolerance for {ticker}: {e}")
         return "Unknown"
+
 
 
 def format_market_cap(mcap):
