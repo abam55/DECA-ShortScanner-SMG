@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DECA SMG Stock Screener</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    #loading-spinner { display: none; }
+    .results-controls { display: none; }
+    .summary-text { font-style: italic; font-size: 0.9rem; color: #444; margin-top: 0.25rem; }
+    .headline-item { margin-bottom: 1rem; }
+    .card-body h6 { margin-top: 1rem; }
+    ul.headline-list { padding-left: 1.2rem; }
+  </style>
+</head>
+<body class="bg-light">
+  <div class="container mt-5">
+    <h1 class="mb-4">DECA SMG Stock Screener</h1>
+
+    <!-- FORM -->
+    <form method="POST" id="screener-form">
+      <!-- Inputs row: API Key, Model, Ticker -->
+      <div class="row g-3">
+        <div class="col-md-6 d-flex flex-column">
+          <label for="api_key" class="form-label mb-1">Groq API Key</label>
+          <input type="text" class="form-control mb-2" id="api_key" name="api_key" placeholder="e.g. gsk_xxxxxxx..." />
+          <label for="model_name" class="form-label mb-1">Model Name</label>
+          <input type="text" class="form-control mb-2" id="model_name" name="model_name" placeholder="e.g. llama3-8b-8192" />
+          <div class="d-flex align-items-center gap-2">
+            <button type="submit" name="action" value="screen_all" class="btn btn-primary">
+              Run Screener for All Stocks
+            </button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#advancedSettings" aria-expanded="false" aria-controls="advancedSettings">
+              <i class="bi bi-gear-fill"></i> Advanced Settings
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-6 d-flex flex-column">
+          <label for="stock" class="form-label mb-1">Single Stock Ticker</label>
+          <input type="text" class="form-control mb-2" id="stock" name="stock" placeholder="e.g. TSLA" />
+          <button type="submit" name="action" value="screen_single" class="btn btn-secondary w-auto" style="align-self: flex-start;">
+            Screen Single Stock
+          </button>
+        </div>
+      </div>
+
+      <!-- ADVANCED SETTINGS -->
+      <div class="collapse mt-3" id="advancedSettings">
+        <div class="card card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label for="min_percent" class="form-label">Min % Gain</label>
+              <input type="number" class="form-control" name="min_percent" id="min_percent" value="20" />
+            </div>
+            <div class="col-md-3">
+              <label for="min_price" class="form-label">Min Price</label>
+              <input type="number" class="form-control" name="min_price" id="min_price" value="3" />
+            </div>
+            <div class="col-md-3">
+              <label for="min_cap" class="form-label">Min Market Cap</label>
+              <input type="number" class="form-control" name="min_cap" id="min_cap" value="25000000" />
+            </div>
+            <div class="col-md-3">
+              <label for="max_cap" class="form-label">Max Market Cap</label>
+              <input type="number" class="form-control" name="max_cap" id="max_cap" value="250000000" />
+            </div>
+            <div class="col-md-3">
+              <label for="num_headlines" class="form-label">Headlines Per Stock</label>
+              <input type="number" class="form-control" name="num_headlines" id="num_headlines" value="1" min="1" />
+            </div>
+            <div class="col-md-3">
+              <label for="summary_sentences" class="form-label">Sentences per Summary</label>
+              <input type="number" class="form-control" name="summary_sentences" id="summary_sentences" value="3" min="1" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <!-- LOADING SPINNER -->
+    <div class="text-center mt-5" id="progress-section">
+      <div class="spinner-border text-primary" role="status" id="loading-spinner">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    {% if error %}
+      <div class="alert alert-danger mt-4">{{ error }}</div>
+    {% endif %}
+
+    <!-- SORT CONTROLS -->
+    <div class="mt-4 results-controls" id="sort-controls">
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <span class="me-2 fw-semibold">Sort by:</span>
+        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsStars(true)">⭐ Low → High</button>
+        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsStars(false)">⭐ High → Low</button>
+        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsRisk(true)">Risk Low → High</button>
+        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsRisk(false)">Risk High → Low</button>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    {% if results %}
+      <div class="mt-4" id="results-block">
+        {{ results | safe }}
+      </div>
+      <script>document.getElementById("sort-controls").style.display = "block";</script>
+    {% endif %}
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.getElementById("screener-form").addEventListener("submit", () => {
+      const resultSection = document.getElementById("results-block");
+      const errorAlert = document.querySelector(".alert");
+      if (resultSection) resultSection.remove();
+      if (errorAlert) errorAlert.remove();
+      document.getElementById("loading-spinner").style.display = "inline-block";
+    });
+
+    function sortResultsStars(ascending = true) {
+      const cards = Array.from(document.querySelectorAll(".result-card"));
+      cards.sort((a, b) => {
+        const aStars = (a.innerText.match(/⭐/g) || []).length;
+        const bStars = (b.innerText.match(/⭐/g) || []).length;
+        return ascending ? aStars - bStars : bStars - aStars;
+      });
+      const block = document.getElementById("results-block");
+      block.innerHTML = "";
+      cards.forEach(card => block.appendChild(card));
+    }
+
+    function sortResultsRisk(ascending = true) {
+      const RISK_RANK = { "high": 1, "medium": 2, "low": 3, "unknown": 4 };
+      const cards = Array.from(document.querySelectorAll(".result-card"));
+
+      function extractRisk(card) {
+        const riskTextMatch = card.innerText.match(/Risk Tolerance:\s*(High|Medium|Low|Unknown)/i);
+        const risk = riskTextMatch ? riskTextMatch[1].toLowerCase() : "unknown";
+        return RISK_RANK[risk] || 4;
+      }
+
+      cards.sort((a, b) => {
+        const aRank = extractRisk(a);
+        const bRank = extractRisk(b);
+        return ascending ? aRank - bRank : bRank - aRank;
+      });
+
+      const block = document.getElementById("results-block");
+      block.innerHTML = "";
+      cards.forEach(card => block.appendChild(card));
+    }
+  </script>
+</body>
+</html>
