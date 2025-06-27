@@ -14,16 +14,23 @@ def index():
         stock = request.form.get("stock", "").strip()
         action = request.form.get("action", "")
 
-        # Gather settings from form
         try:
-            settings = {
-                "min_percent": float(request.form.get("min_percent", 20)),
-                "min_price": float(request.form.get("min_price", 3)),
-                "min_cap": float(request.form.get("min_cap", 25_000_000)),
-                "max_cap": float(request.form.get("max_cap", 250_000_000)),
-                "num_headlines": int(request.form.get("num_headlines", 1)),
-                "summary_sentences": int(request.form.get("summary_sentences", 3))
-            }
+            if action == "screen_all":
+                settings = {
+                    "min_percent": float(request.form.get("min_percent", 20)),
+                    "min_price": float(request.form.get("min_price", 3)),
+                    "min_cap": float(request.form.get("min_cap", 25_000_000)),
+                    "max_cap": float(request.form.get("max_cap", 250_000_000)),
+                    "num_headlines": int(request.form.get("num_headlines", 1)),
+                    "summary_sentences": int(request.form.get("summary_sentences", 3))
+                }
+            elif action == "screen_single":
+                settings = {
+                    "num_headlines": int(request.form.get("num_headlines_single", 1)),
+                    "summary_sentences": int(request.form.get("summary_sentences_single", 3))
+                }
+            else:
+                settings = {}
         except Exception:
             error = "Invalid input in advanced settings."
             return render_template("index.html", error=error)
