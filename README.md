@@ -49,7 +49,7 @@ git clone https://github.com/abam55/DECA-ShortScanner-SMG.git
 cd DECA-ShortScanner-SMG
 
 # Install dependencies
-In the same terminal, type: pip install flask yfinance requests beautifulsoup4 selenium newspaper3k groq chromedriver_autoinstaller lxml_html_clean
+In the same terminal, type: pip install flask yfinance requests beautifulsoup4 selenium newspaper3k groq chromedriver-autoinstaller lxml_html_clean
 
 # 🔐 Configuration
 Head over to https://console.groq.com and create an account to generate your API key.
@@ -61,7 +61,7 @@ Enter your key and model name (e.g., llama3-8b-8192) into the form on the homepa
 Adjust advanced settings as needed before launching a scan
 
 # 🚦 How to Use
-In the same terminal, type: flask --app app.py run
+In the same terminal, type: flask python app.py
 
 Navigate to http://127.0.0.1:5000/ in your browser. From there:
 
