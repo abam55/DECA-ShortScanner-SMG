@@ -3,146 +3,266 @@
 <head>
   <meta charset="UTF-8" />
   <title>DECA SMG Stock Screener</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Bootstrap & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+
   <style>
-    #loading-spinner { display: none; }
-    .results-controls { display: none; }
-    .summary-text { font-style: italic; font-size: 0.9rem; color: #444; margin-top: 0.25rem; }
-    .headline-item { margin-bottom: 1rem; }
-    .card-body h6 { margin-top: 1rem; }
-    ul.headline-list { padding-left: 1.2rem; }
+    :root {
+      --primary-color: #1f3c88;
+      --secondary-color: #4e7ac7;
+      --accent-color: #ffc107;
+      --bg-light: #f8faff;
+      --card-bg: #ffffff;
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--bg-light), #e3ecf5);
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      color: #333;
+    }
+
+    h1, h5 {
+      font-weight: 700;
+      color: var(--primary-color);
+    }
+
+    .container {
+      max-width: 1100px;
+    }
+
+    .card-custom {
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0px 4px 20px rgba(0,0,0,0.08);
+      background: var(--card-bg);
+      padding: 25px;
+      margin-bottom: 2rem;
+      animation: fadeIn 0.4s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .btn-primary {
+      background: var(--primary-color);
+      border: none;
+      font-weight: 600;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .btn-primary:hover {
+      background: var(--secondary-color);
+      transform: translateY(-2px);
+      box-shadow: 0px 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .btn-outline-secondary:hover {
+      background-color: var(--bg-light);
+    }
+
+    .form-label {
+      font-weight: 600;
+    }
+
+    input, select {
+      border-radius: 10px !important;
+    }
+
+    #loading-spinner {
+      display: none;
+    }
+
+    .results-controls {
+      margin-top: 1.5rem;
+      background: #ffffffd8;
+      padding: 10px 15px;
+      border-radius: 10px;
+      box-shadow: 0px 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .result-card {
+      border-radius: 12px;
+      padding: 15px;
+      background: white;
+      box-shadow: 0px 2px 12px rgba(0,0,0,0.05);
+      margin-bottom: 1rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .result-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0px 6px 15px rgba(0,0,0,0.1);
+    }
+
+    .badge-risk-high { background-color: #dc3545; }
+    .badge-risk-medium { background-color: #ffc107; }
+    .badge-risk-low { background-color: #28a745; }
+    .badge-risk-unknown { background-color: #6c757d; }
   </style>
 </head>
-<body class="bg-light">
-  <div class="container mt-5">
-    <h1 class="mb-4">DECA SMG Stock Screener</h1>
+<body>
 
-    <!-- FORM -->
-    <form method="POST" id="screener-form">
-      <!-- Inputs row: API Key, Model, Ticker -->
-      <div class="row g-3">
-        <div class="col-md-6 d-flex flex-column">
-          <label for="api_key" class="form-label mb-1">Groq API Key</label>
-          <input type="text" class="form-control mb-2" id="api_key" name="api_key" placeholder="e.g. gsk_xxxxxxx..." />
-          <label for="model_name" class="form-label mb-1">Model Name</label>
-          <input type="text" class="form-control mb-2" id="model_name" name="model_name" placeholder="e.g. llama3-8b-8192" />
-          <div class="d-flex align-items-center gap-2">
-            <button type="submit" name="action" value="screen_all" class="btn btn-primary">
-              Run Screener for All Stocks
-            </button>
-            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#advancedSettings" aria-expanded="false" aria-controls="advancedSettings">
-              <i class="bi bi-gear-fill"></i> Advanced Settings
-            </button>
+  <div class="container py-5">
+    <h1 class="mb-4 text-center">
+      <i class="bi bi-graph-up-arrow"></i> DECA SMG Stock Screener
+    </h1>
+
+    <div class="card-custom">
+
+      <!-- API Config -->
+      <h5 class="mb-3"><i class="bi bi-key-fill"></i> API Configuration</h5>
+      <form method="POST" id="screener-form">
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label for="api_key" class="form-label">Groq API Key</label>
+            <input type="text" name="api_key" id="api_key" class="form-control" placeholder="gsk_xxxxxxx…" required />
+          </div>
+          <div class="col-md-6">
+            <label for="model_name" class="form-label">Model Name</label>
+            <input type="text" name="model_name" id="model_name" class="form-control" placeholder="llama3-8b-8192" required />
           </div>
         </div>
 
-        <div class="col-md-6">
-          <label for="stock" class="form-label mb-1">Single Stock Ticker</label>
-          <input type="text" class="form-control mb-2" id="stock" name="stock" placeholder="e.g. TSLA" />
-
-          <div class="d-flex gap-2">
-            <button type="submit" name="action" value="screen_single" class="btn btn-secondary">
-              Screen Single Stock
-            </button>
-            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#singleStockSettings" aria-expanded="false" aria-controls="singleStockSettings">
-              <i class="bi bi-gear"></i> Settings
-            </button>
+        <!-- Stock Screener -->
+        <h5 class="mb-3"><i class="bi bi-search"></i> Stock Screening</h5>
+        <div class="row g-3">
+          <!-- Single Stock -->
+          <div class="col-md-6">
+            <label for="stock" class="form-label">Single Stock Ticker</label>
+            <input type="text" name="stock" id="stock" class="form-control mb-2" placeholder="TSLA" />
+            <div class="d-flex gap-2">
+              <button type="submit" name="action" value="screen_single" class="btn btn-secondary w-100">
+                Screen Single Stock
+              </button>
+              <button type="button" class="btn btn-outline-secondary"
+                      data-bs-toggle="collapse" data-bs-target="#singleStockSettings">
+                <i class="bi bi-gear"></i>
+              </button>
+            </div>
+            <div class="collapse mt-2" id="singleStockSettings">
+              <div class="card card-body">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="num_headlines_single" class="form-label">Headlines Per Stock</label>
+                    <input type="number" name="num_headlines_single" id="num_headlines_single"
+                           class="form-control" value="1" min="1" />
+                  </div>
+                  <div class="col-md-6">
+                    <label for="summary_sentences_single" class="form-label">Sentences per Summary</label>
+                    <input type="number" name="summary_sentences_single" id="summary_sentences_single"
+                           class="form-control" value="3" min="1" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- ADVANCED SETTINGS FOR SINGLE STOCK -->
-          <div class="collapse mt-2" id="singleStockSettings">
-            <div class="card card-body">
-              <div class="row g-3">
-                <div class="col-md-6">
-                  <label for="num_headlines_single" class="form-label">Headlines Per Stock</label>
-                  <input type="number" class="form-control" name="num_headlines_single" id="num_headlines_single" value="1" min="1" />
-                </div>
-                <div class="col-md-6">
-                  <label for="summary_sentences_single" class="form-label">Sentences per Summary</label>
-                  <input type="number" class="form-control" name="summary_sentences_single" id="summary_sentences_single" value="3" min="1" />
+          <!-- Full Screener -->
+          <div class="col-md-6">
+            <label class="form-label">Run Full Screener</label>
+            <div class="d-flex gap-2 mb-2">
+              <button type="submit" name="action" value="screen_all" class="btn btn-primary w-100">
+                Run Screener for All Stocks
+              </button>
+              <button type="button" class="btn btn-outline-secondary"
+                      data-bs-toggle="collapse" data-bs-target="#advancedSettings">
+                <i class="bi bi-sliders"></i>
+              </button>
+            </div>
+            <div class="collapse" id="advancedSettings">
+              <div class="card card-body">
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label for="min_percent" class="form-label">Min % Gain</label>
+                    <input type="number" name="min_percent" id="min_percent" class="form-control" value="20" />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="min_price" class="form-label">Min Price</label>
+                    <input type="number" name="min_price" id="min_price" class="form-control" value="3" />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="min_cap" class="form-label">Min Market Cap</label>
+                    <input type="text" name="min_cap" id="min_cap" class="form-control"
+                           value="25,000,000" data-format="comma" />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="max_cap" class="form-label">Max Market Cap</label>
+                    <input type="text" name="max_cap" id="max_cap" class="form-control"
+                           value="250,000,000,000" data-format="comma" />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="num_headlines" class="form-label">Headlines Per Stock</label>
+                    <input type="number" name="num_headlines" id="num_headlines" class="form-control" value="1" min="1" />
+                  </div>
+                  <div class="col-md-3">
+                    <label for="summary_sentences" class="form-label">Sentences per Summary</label>
+                    <input type="number" name="summary_sentences" id="summary_sentences" class="form-control" value="3" min="1" />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </form>
 
-      <!-- ADVANCED SETTINGS FOR ALL STOCKS -->
-      <div class="collapse mt-3" id="advancedSettings">
-        <div class="card card-body">
-          <div class="row g-3">
-            <div class="col-md-3">
-              <label for="min_percent" class="form-label">Min % Gain</label>
-              <input type="number" class="form-control" name="min_percent" id="min_percent" value="20" />
-            </div>
-            <div class="col-md-3">
-              <label for="min_price" class="form-label">Min Price</label>
-              <input type="number" class="form-control" name="min_price" id="min_price" value="3" />
-            </div>
-            <div class="col-md-3">
-              <label for="min_cap" class="form-label">Min Market Cap</label>
-              <input type="number" class="form-control" name="min_cap" id="min_cap" value="25000000" />
-            </div>
-            <div class="col-md-3">
-              <label for="max_cap" class="form-label">Max Market Cap</label>
-              <input type="number" class="form-control" name="max_cap" id="max_cap" value="250000000" />
-            </div>
-            <div class="col-md-3">
-              <label for="num_headlines" class="form-label">Headlines Per Stock</label>
-              <input type="number" class="form-control" name="num_headlines" id="num_headlines" value="1" min="1" />
-            </div>
-            <div class="col-md-3">
-              <label for="summary_sentences" class="form-label">Sentences per Summary</label>
-              <input type="number" class="form-control" name="summary_sentences" id="summary_sentences" value="3" min="1" />
-            </div>
-          </div>
+      <!-- Spinner -->
+      <div class="text-center mt-4" id="progress-section">
+        <div class="spinner-border text-primary" role="status" id="loading-spinner">
+          <span class="visually-hidden">Loading...</span>
         </div>
       </div>
-    </form>
 
-    <!-- LOADING SPINNER -->
-    <div class="text-center mt-5" id="progress-section">
-      <div class="spinner-border text-primary" role="status" id="loading-spinner">
-        <span class="visually-hidden">Loading...</span>
-      </div>
-    </div>
-
-    {% if error %}
-      <div class="alert alert-danger mt-4">{{ error }}</div>
-    {% endif %}
-
-    <!-- SORT CONTROLS -->
-    <div class="mt-4 results-controls" id="sort-controls">
-      <div class="d-flex align-items-center flex-wrap gap-2">
+      <!-- Sort Controls -->
+      <div class="results-controls mt-4" id="sort-controls">
         <span class="me-2 fw-semibold">Sort by:</span>
-        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsStars(true)">⭐ Low → High</button>
-        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsStars(false)">⭐ High → Low</button>
-        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsRisk(false)">Risk Low → High</button>
-        <button class="btn btn-sm btn-outline-dark" onclick="sortResultsRisk(true)">Risk High → Low</button>
+        <button type="button" class="btn btn-sm btn-outline-dark" onclick="sortResultsStars(true)">⭐ Low → High</button>
+        <button type="button" class="btn btn-sm btn-outline-dark" onclick="sortResultsStars(false)">⭐ High → Low</button>
+        <button type="button" class="btn btn-sm btn-outline-dark" onclick="sortResultsRisk(true)">Risk High → Low</button>
+        <button type="button" class="btn btn-sm btn-outline-dark" onclick="sortResultsRisk(false)">Risk Low → High</button>
       </div>
-    </div>
 
-    <!-- RESULTS -->
-    {% if results %}
+      <!-- Results -->
       <div class="mt-4" id="results-block">
-        {{ results | safe }}
+        {% if results %}
+          {{ results | safe }}
+        {% endif %}
       </div>
-      <script>document.getElementById("sort-controls").style.display = "block";</script>
-    {% endif %}
+
+    </div>
   </div>
 
-  <!-- SCRIPTS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // Hide sort controls during search
     document.getElementById("screener-form").addEventListener("submit", () => {
-      const resultSection = document.getElementById("results-block");
-      const errorAlert = document.querySelector(".alert");
-      if (resultSection) resultSection.remove();
-      if (errorAlert) errorAlert.remove();
+      document.getElementById("results-block").innerHTML = "";
+      const e = document.querySelector(".alert");
+      if (e) e.remove();
       document.getElementById("loading-spinner").style.display = "inline-block";
+      document.getElementById("sort-controls").style.display = "none"; // Hide sort controls while loading
     });
 
-    function sortResultsStars(ascending = true) {
+    // Hide sort controls if no results or only one result
+    window.addEventListener("DOMContentLoaded", () => {
+      const resultsBlock = document.getElementById("results-block");
+      const sortControls = document.getElementById("sort-controls");
+
+      const resultCards = resultsBlock.querySelectorAll(".result-card");
+      const isSingleStock = resultCards.length <= 1;
+      const hasResults = resultCards.length > 0;
+
+      if (!hasResults || isSingleStock) {
+        sortControls.style.display = "none";
+      } else {
+        sortControls.style.display = "block";
+      }
+    });
+
+    function sortResultsStars(ascending) {
       const cards = Array.from(document.querySelectorAll(".result-card"));
       cards.sort((a, b) => {
         const aStars = (a.innerText.match(/⭐/g) || []).length;
@@ -151,29 +271,46 @@
       });
       const block = document.getElementById("results-block");
       block.innerHTML = "";
-      cards.forEach(card => block.appendChild(card));
+      cards.forEach(c => {
+        c.style.animation = "fadeIn 0.3s ease";
+        block.appendChild(c);
+      });
     }
 
-    function sortResultsRisk(ascending = true) {
-      const RISK_RANK = { "high": 1, "medium": 2, "low": 3, "unknown": 4 };
+    function sortResultsRisk(ascending) {
+      const RISK_RANK = { high: 1, medium: 2, low: 3, unknown: 4 };
       const cards = Array.from(document.querySelectorAll(".result-card"));
-
-      function extractRisk(card) {
-        const riskTextMatch = card.innerText.match(/Risk Tolerance:\s*(High|Medium|Low|Unknown)/i);
-        const risk = riskTextMatch ? riskTextMatch[1].toLowerCase() : "unknown";
-        return RISK_RANK[risk] || 4;
-      }
-
       cards.sort((a, b) => {
-        const aRank = extractRisk(a);
-        const bRank = extractRisk(b);
-        return ascending ? aRank - bRank : bRank - aRank;
+        const getRank = card => {
+          const m = card.innerText.match(/Risk Tolerance:\s*(High|Medium|Low|Unknown)/i);
+          return RISK_RANK[(m ? m[1].toLowerCase() : "unknown")];
+        };
+        return ascending ? getRank(a) - getRank(b) : getRank(b) - getRank(a);
       });
-
       const block = document.getElementById("results-block");
       block.innerHTML = "";
-      cards.forEach(card => block.appendChild(card));
+      cards.forEach(c => {
+        c.style.animation = "fadeIn 0.3s ease";
+        block.appendChild(c);
+      });
     }
+
+    function formatWithCommas(val) {
+      const digits = val.replace(/[^\d]/g, "");
+      return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    document.querySelectorAll('input[data-format="comma"]').forEach(input => {
+      input.addEventListener("input", () => {
+        input.value = formatWithCommas(input.value);
+      });
+    });
+
+    document.getElementById("screener-form").addEventListener("submit", () => {
+      document.querySelectorAll('input[data-format="comma"]').forEach(input => {
+        input.value = input.value.replace(/,/g, "");
+      });
+    });
   </script>
 </body>
 </html>
