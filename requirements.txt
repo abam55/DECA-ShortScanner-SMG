@@ -1,9 +1,11 @@
-flask
-yfinance
+Flask
+gunicorn
 requests
 beautifulsoup4
-selenium
 newspaper3k
+yfinance
+numpy
+pandas
 groq
-chromedriver-autoinstaller
-lxml-html-clean
+selenium
+lxml
