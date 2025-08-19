@@ -42,7 +42,7 @@ In order to grab my code, you will need to install Git at https://git-scm.com/do
 
 Clone the repository:
 
-In the terminal of your IDE/Code editor, type:
+In the terminal of your IDE/Code editor, copy and paste:
 
 git clone https://github.com/abam55/DECA-ShortScanner-SMG.git
 
