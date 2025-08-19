@@ -1,38 +1,31 @@
-# Use slim Python image
 FROM python:3.11-slim
 
-# System deps
+# Install system dependencies for Chrome/Chromium + fonts
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget gnupg ca-certificates curl \
+    wget gnupg ca-certificates curl unzip \
     fonts-liberation locales \
-    libglib2.0-0 libnss3 libatk1.0-0 libatk-bridge2.0-0 \
-    libdrm2 libx11-xcb1 libxcb1 libxcomposite1 libxdamage1 libxext6 \
-    libxfixes3 libxkbcommon0 libxrandr2 libgbm1 libpango-1.0-0 libcairo2 \
+    libglib2.0-0 libnss3 libx11-6 libx11-xcb1 \
+    libxcomposite1 libxdamage1 libxext6 libxfixes3 \
+    libxrandr2 libxkbcommon0 libdrm2 libgbm1 \
+    libpango-1.0-0 libcairo2 \
     && rm -rf /var/lib/apt/lists/*
 
+# (Optional) Install Chromium (if your app needs a browser)
+RUN apt-get update && apt-get install -y chromium && rm -rf /var/lib/apt/lists/*
 
-# Install Google Chrome (stable)
-RUN mkdir -p /usr/share/keyrings && \
-    wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
-      | gpg --dearmor -o /usr/share/keyrings/google-linux-signing-keyring.gpg && \
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux-signing-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
-      > /etc/apt/sources.list.d/google-chrome.list && \
-    apt-get update && apt-get install -y --no-install-recommends google-chrome-stable && \
-    rm -rf /var/lib/apt/lists/*
+# Set Python environment
+ENV PYTHONUNBUFFERED=1
 
-# Workdir
+# Copy requirements + install
 WORKDIR /app
-
-# Python deps first (better caching)
-COPY requirements.txt ./
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# App code
+# Copy rest of the app
 COPY . .
 
-# Env so Selenium can find Chrome (your code already sets headless)
-ENV CHROME_BIN=/usr/bin/google-chrome
+# Expose port for Flask
+EXPOSE 10000
 
-# Render sets $PORT; bind gunicorn to it
-# Use sh -c so $PORT gets expanded
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:$PORT app:app"]
+# Start app with Gunicorn
+CMD ["gunicorn", "-b", "0.0.0.0:10000", "app:app"]
