@@ -61,7 +61,7 @@ Enter your key and model name (e.g., llama3-8b-8192) into the form on the homepa
 Adjust advanced settings as needed before launching a scan
 
 # 🚦 How to Use
-In the same terminal, type: flask python app.py
+In the same terminal, type: python app.py
 
 Navigate to http://127.0.0.1:5000/ in your browser(A link should appear in the terminal). From there:
 
