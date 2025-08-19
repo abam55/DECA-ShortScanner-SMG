@@ -1,0 +1,9 @@
+flask
+yfinance
+requests
+beautifulsoup4
+selenium
+newspaper3k
+groq
+chromedriver-autoinstaller
+lxml-html-clean
